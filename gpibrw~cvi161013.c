@@ -1,13 +1,9 @@
-#include "Generate_Mask.h"
 #include "Fit_Options.h"
 #include <cvinetv.h>
 #include <analysis.h>
 #include "toolbox.h"
 #include "ERG.h"
 #include "Fit_options.h" 
-#include "Sequence.h"  
-#include "global.h"  
-
 
 /*---------------------------------------------------------------------------*/
 /* Modified on May 2016: changed to TDS 3032  (from TDS 220 )                */
@@ -27,31 +23,67 @@
 #include "gpibrw.h"
 
 /*---------------------------------------------------------------------------*/
-/* Internal function prototypes                                              */
+/* Defines                                                                   */
 /*---------------------------------------------------------------------------*/
-
-
-FILE* IO_output;
-FILE* IO_intensity;
-
-char pathname[FILENAME_MAX]; 
-
+#define WRITE 0
+#define READ 1
+#define TRUE 1
+#define FALSE 0
 
 /*---------------------------------------------------------------------------*/
 /* Module-globals                                                            */
 /*---------------------------------------------------------------------------*/
+int  Main_pnl_handle, device, device1, Fit_pnl_handle ;
+int  address;
+int  pause_flag=0;
+int  Nscans=10, i=0, j, k;
+int  SRS_flag=0;
+int  start=0;
+int  Npoints=10; 
+double xarray[10000];
+double data2fit[10000];
+double buffer[10000];
+double baseline;   
+char pathname[FILENAME_MAX]; 
+double maximumValue, minimumValue;
+double tobelog[3];    
 
+CNVData data=0;
+CNVData fields;
+	
+/*---------------------------------------------------------------------------*/
+/* Internal function prototypes                                              */
+/*---------------------------------------------------------------------------*/
+int send_board_commands (void);
+int waveform(int color, int data_file);
+int wavepreamble(void);
+int wavexinterval(void);
+int waveyscaling(void);
+int wavex0(void);
+int cleanbuffer (void);
 
+void reset_connection_SRS(void);
+void reset_connection_oscillo(void);
+void setup_oscillo(void);
+void setup_SRS(void);
+void acquire_scans(void);
+void SRS_onoff(void);
+void generate_xarray (void);
+void fit_data (void);
+void plot_data (int);
 
+double ModelFunct (double x, double a[], int ncoef);
+void get_intensity(void);
+static void CVICALLBACK dataCallback(void * handle,CNVData data, void * callbackData);
 
-
+FILE* IO_output;
+FILE* IO_intensity;
 
 /*---------------------------------------------------------------------------*/
 /* This is the application's entry-point.                                    */
 /*---------------------------------------------------------------------------*/
 int main (int argc, char *argv[])
 {
-	init_variables();
 	if (InitCVIRTE (0, argv, 0) == 0)
 		return -1;
 	DisableBreakOnLibraryErrors ();
@@ -59,27 +91,13 @@ int main (int argc, char *argv[])
 	setup_SRS();
 	generate_xarray ();
 
-
 	if ((Main_pnl_handle = LoadPanel (0, "ERG.uir", ERG_panel)) < 0)
 		return -1;
-	mask_folder(Main_pnl_handle,99,EVENT_COMMIT,0,0,0);
-	PopulateList();
+	
 	DisplayPanel (Main_pnl_handle);
 	RunUserInterface ();
 	DiscardPanel (Main_pnl_handle);
 	return 0;
-}
-
-void init_variables(void)
-{
-	pause_flag=0;
-	Nscans=10;
-	i=0;
-	start=0;
-	Npoints=10; 
-	SRS_flag=0;
-	data=0;
-	Npixel=512;
 }
 
 void setup_SRS(void)
@@ -204,7 +222,6 @@ int waveform (int color, int data_file)
 	ConvertArrayType (read_buffer, VAL_CHAR, data2fit, VAL_DOUBLE, 10000);
 	written_bytes=WriteFile (data_file,read_buffer ,10000 );
 	CloseFile (data_file);
-	
 	
 	
 	if (written_bytes!=10000)
@@ -446,7 +463,114 @@ void SRS_onoff(void)
 	return;
 }
 
-
+void fit_data (void)
+{
+	GetCtrlVal (Fit_pnl_handle, Fit_panel_start_val, &start);
+	GetCtrlVal (Fit_pnl_handle, Fit_panel_points_num, &Npoints);
+	//printf("start at: %d, Npoints : %d\n",start, Npoints);
+	double slope, intercept, residue, coef[4], value;
+	double fit[Npoints];
+	int maximumIndex, minimumIndex;
+	CNVData data=0;
+	CNVWriter writer = 0;
+	
+	for (int k = 0; k < Npoints; k++)
+    fit[k] = 0;
+	///////////////////////////////////////////////////////////////
+	//////////////to do : create specific function for background subtraction
+	int pix_num,bckgrd_satus;
+	double bckgrd_val;
+	GetCtrlVal (Main_pnl_handle, ERG_panel_bckgrd_sub, &bckgrd_satus); 
+	if (bckgrd_satus==1)
+	{
+		GetCtrlVal (Main_pnl_handle, ERG_panel_bckgrd, &pix_num);
+		Mean (&data2fit[pix_num-50], 100, &bckgrd_val);
+		j=0;
+		while (j<10000)
+		{
+			buffer[j] = data2fit[j]-bckgrd_val;
+			j++;
+		}
+	}
+	else
+	{
+		  j=0;
+		while (j<10000)
+		{
+			buffer[j] = data2fit[j];
+			j++;
+		}
+	}
+	//////////////////////////////////////////////////////////////
+	
+	generate_xarray ();   
+	PlotXY (Main_pnl_handle, ERG_panel_scope, &xarray[start], &buffer[start], Npoints, VAL_DOUBLE, VAL_DOUBLE, VAL_THIN_LINE, VAL_SOLID_SQUARE, VAL_SOLID, 1, VAL_GREEN); 
+ 	
+	GetCtrlVal (Fit_pnl_handle, Fit_panel_fit_function, &j);
+	if (j==0)
+	{
+		MaxMin1D(&buffer[start], Npoints, &maximumValue, &maximumIndex, &minimumValue, &minimumIndex);
+		Npoints=  minimumIndex;
+		LinearFitEx (&xarray[start], &buffer[start], NULL, Npoints, LEAST_SQUARE, 0.0001, fit, &slope, &intercept, &residue);
+	
+		////////////to do: create separated function for uploading network variable/////////////
+		//write optimization value (slope) as a network variable
+		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
+		CNVCreateScalarDataValue (&data, CNVDouble, slope);
+//		Delay(0.5);     
+		CNVWrite (writer, data, 5000);
+		CNVDisposeData (data);
+		Delay(0.5);
+//		printf("Slope=%f\n", slope); 
+	}
+							  
+	if (j==1)
+	{
+		Mean (&buffer[start-100], 100, &baseline);
+		MaxMin1D(&buffer[start], Npoints, &maximumValue, &maximumIndex, &minimumValue, &minimumIndex);
+		Npoints=  minimumIndex;
+		Mean (&buffer[start+minimumIndex-5], 10, &minimumValue);
+		coef[0]= start+minimumIndex;
+		coef[1]= minimumIndex/2;
+	//	printf("base=%f, min=%f\n",baseline, minimumValue);      
+		NonLinearFitWithMaxIters (&xarray[start], &buffer[start], fit, Npoints, 100, ModelFunct, coef, 2, &residue);
+	//	printf("coef1=%f, coef2=%f\n",coef[0], coef[1]);
+		
+		//write optimization value (rise time; coef[1]) as a network variable
+//		coef[1]=coef[1]/10;
+		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
+		CNVCreateScalarDataValue (&data, CNVDouble, coef[1]/10000);
+		CNVWrite (writer, data, 5000);
+		CNVDisposeData (data);
+		Delay(0.5);
+	}
+	
+	if (j==2)
+	{
+		MaxMin1D(&buffer[start], Npoints, &maximumValue, &maximumIndex, &minimumValue, &minimumIndex);
+		value= maximumValue - minimumValue;
+		
+		if (minimumIndex < maximumIndex)
+		{
+			Npoints=maximumIndex-minimumIndex;
+			Copy1D (&buffer[minimumIndex+start], Npoints, fit);
+			start= minimumIndex+start;
+			value= maximumValue - minimumValue;
+		}
+		else
+		{
+			value= 0;
+		}
+		
+		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
+		CNVCreateScalarDataValue (&data, CNVDouble, value);
+		CNVWrite (writer, data, 5000);
+		CNVDisposeData (data);
+		Delay(0.5);
+	}
+	
+	PlotXY (Main_pnl_handle, ERG_panel_scope, &xarray[start], fit, Npoints, VAL_DOUBLE, VAL_DOUBLE, VAL_THIN_LINE, VAL_SOLID_SQUARE, VAL_SOLID, 1, VAL_RED);
+}
 
 void get_intensity(void)
 {
@@ -503,46 +627,6 @@ void plot_data (int color)
 	
 	PlotY (Main_pnl_handle, ERG_panel_scope, buffer, 10000,VAL_DOUBLE , VAL_THIN_LINE, VAL_EMPTY_SQUARE, VAL_SOLID, 1, MakeColor(color,color,color));
 }
-
-double display_masks(double drive_level[])
-{   
-	
-	DeleteGraphPlot (Main_pnl_handle, ERG_panel_mask_display, -1, VAL_IMMEDIATE_DRAW);
-	PlotY (Main_pnl_handle, ERG_panel_mask_display, drive_level, Npixel, VAL_DOUBLE, VAL_VERTICAL_BAR, VAL_NO_POINT, VAL_SOLID, 1, VAL_RED);
-															 
-					
-	return 0;
-}
-
-void PopulateList()
-{
-	char label[MAX_PATHNAME_LEN];
-	char fileName[MAX_PATHNAME_LEN];
-	int numItems = 0; 
-	
-	ClearListCtrl (Main_pnl_handle, ERG_panel_loaded_mask_list);
-	SplitPath (mask_path, NULL, NULL, fileName);
-	Fmt (label, "%s<%s%s%s", "Project Directory (", fileName, ")");
-	GetFiles(mask_path, &numItems, numItems-1);
-}
-
-void GetFiles(char dir[], int* numItems, int parentItem)
-{
-	char fileName[MAX_PATHNAME_LEN], searchPath[MAX_PATHNAME_LEN];
-	int error = 0;
-	strcpy (searchPath, dir); 
-	strcat (searchPath, "\\*");
-	
-	if (!GetFirstFile (searchPath, 1, 1, 0, 0, 0, 0, fileName)) // has at least one file
-	{
-		InsertListItem (Main_pnl_handle, ERG_panel_loaded_mask_list, -1, fileName, (*numItems)++);
-		while (!GetNextFile (fileName))
-		{
-			InsertListItem (Main_pnl_handle, ERG_panel_loaded_mask_list, -1, fileName, (*numItems)++);
-		}
-	}
-}
-
 
 int CVICALLBACK acquire (int panel, int control, int event,
 						 void *callbackData, int eventData1, int eventData2)
@@ -741,47 +825,31 @@ int CVICALLBACK load_plot (int panel, int control, int event,
 	return 0;
 }
 
-int CVICALLBACK mask_folder (int panel, int control, int event,
-							 void *callbackData, int eventData1, int eventData2)
+int CVICALLBACK Fit_loaded_curve (int panel, int control, int event,
+								  void *callbackData, int eventData1, int eventData2)
 {
 	switch (event)
 	{
 		case EVENT_COMMIT:
-
-			DirSelectPopup ("d:\\test", "Masks Folder", 1, 1, mask_path);
-			SetCtrlVal (ERG_panel,ERG_panel_folder_path , mask_path);
-			PopulateList();
-
-			
-
-			  
-			  
+			fit_data();
 			break;
 	}
 	return 0;
 }
 
-int  CVICALLBACK loaded_mask(int panel, int control, int event, void *callbackData, int eventData1, int eventData2)
-{	
-	char dummy[500];
-	double dummyInt[1000];
+int CVICALLBACK fit_options (int panel, int control, int event,
+							 void *callbackData, int eventData1, int eventData2)
+{
 	switch (event)
-			
 	{
-	case EVENT_COMMIT:
-		GetCtrlVal (Main_pnl_handle, ERG_panel_loaded_mask_list, &mask_index);
-		GetLabelFromIndex (Main_pnl_handle, ERG_panel_loaded_mask_list, mask_index, &mask_filename);
+		case EVENT_COMMIT:
 		
-		strcpy (dummy, mask_path);
-		strcat (dummy, "\\");
-		strcat(dummy, mask_filename);
-		
-		FileToArray (dummy, drive_level, VAL_DOUBLE, Npixel, 1, VAL_GROUPS_TOGETHER, VAL_GROUPS_AS_COLUMNS, VAL_ASCII);
-		display_masks(drive_level);
-
-
-
-			  
+			if ((Fit_pnl_handle = LoadPanel (0, "Fit_Options.uir", Fit_panel)) < 0)
+			return -1;
+	
+			DisplayPanel (Fit_pnl_handle );  
+			RunUserInterface ();
+			DiscardPanel (Fit_pnl_handle );
 			break;
 	}
 	return 0;
