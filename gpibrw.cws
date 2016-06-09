@@ -1,9 +1,9 @@
 [Workspace Header]
-Version = 1500
-Pathname = "/y/erg/ERG_TDS3032viaGPIB_Fit_Network - May2016/gpibrw.cws"
-CVI Dir = "/c/program files/national instruments/cvi2015"
+Version = 1302
+Pathname = "/d/QC-vision/gpibrw.cws"
+CVI Dir = "/c/program files/national instruments/cvi2013"
 CVI Shared Dir = "/C/Program Files/National Instruments/Shared/CVI"
-CVI Pub Local Dir = "/C/ProgramData/National Instruments/CVI2015"
+CVI Pub Local Dir = "/C/ProgramData/National Instruments/CVI2013"
 CVI Pub Global Dir = "/C/ProgramData/National Instruments/CVI"
 IVI Standard Root Dir = "/C/Program Files/IVI Foundation/IVI"
 IVI Standard Root 64-bit Dir = "/C/Program Files/IVI Foundation/IVI"
@@ -12,11 +12,11 @@ VXIplug&play Framework 64-bit Dir = "/C/Program Files/IVI Foundation/VISA/win64"
 Number of Projects = 1
 Active Project = 1
 Project 0001 = "gpibrw.prj"
-Drag Bar Left = 204
-Window Top = 44
-Window Left = 267
-Window Bottom = 995
-Window Right = 1536
+Drag Bar Left = 211
+Window Top = 88
+Window Left = 506
+Window Bottom = 714
+Window Right = 1911
 Maximized = True
 Maximized Children = True
 Max32 Number Of Errors = 20
@@ -30,14 +30,14 @@ Save Changes Before Compiling = "Always"
 Hide Windows = False
 Break At First Statement = False
 Sort Type = "File Name"
-Number of Opened Files = 2
+Number of Opened Files = 17
 Window Confinement Region Enabled = True
-MainColumnWidth = 187
+MainColumnWidth = 194
 FileDateColumnWidth = 70
 FileSizeColumnWidth = 70
 
 [Project Header 0001]
-Version = 1500
+Version = 1302
 Don't Update DistKit = False
 Platform Code = 4
 Build Configuration = "Debug"
@@ -46,46 +46,207 @@ Batch Build Release = False
 Batch Build Debug = False
 
 [File 0001]
-Path = "/y/erg/ERG_TDS3032viaGPIB_Fit_Network - May2016/gpibrw.c"
+Path = "/d/QC-vision/gpibrw.c"
 File Type = "CSource"
-Disk Date = 3547116030
+Disk Date = 3548320916
 In Projects = "1,"
 Window Top = 32
 Window Left = 10
-Window Z-Order = 2
-Source Window State = "1,578,578,578,24,34,34,0,0,60,0,3,0,3,0,25,495,0,558,23,349,555,1,0,"
-Breakpoint 0001 = "766,0,enabled,"
+Window Z-Order = 5
+Source Window State = "1,566,566,566,12,84,12,0,3,60,0,480,0,3,0,25,542,0,566,84,349,555,1,13,"
+Breakpoint 0001 = "679,0,enabled,"
 
 [File 0002]
-Path = "/y/erg/ERG_TDS3032viaGPIB_Fit_Network - May2016/ERG.uir"
+Path = "/d/QC-vision/ERG.uir"
 File Type = "User Interface Resource"
-Disk Date = 3547094860
+Disk Date = 3548321057
 In Projects = "1,"
 Window Top = 32
 Window Left = 10
 Window Height = 297
 Window Width = 715
-Window Z-Order = 1
+Window Z-Order = 6
 
 [File 0003]
-Path = "/y/erg/ERG_TDS3032viaGPIB_Fit_Network - May2016/ERG.h"
+Path = "/d/QC-vision/Fit_Options.uir"
+File Type = "User Interface Resource"
+Disk Date = 3548156479
+In Projects = "1,"
+Window Top = 92
+Window Left = 42
+Window Height = 349
+Window Width = 715
+Window Z-Order = 10
+
+[File 0004]
+Path = "/d/QC-vision/ERG.h"
 File Type = "Include"
-Disk Date = 3547094860
+Disk Date = 3548321057
 In Projects = "1,"
 Window Top = 32
 Window Left = 10
-Source Window State = "1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,0,349,555,1,0,"
+Window Z-Order = 8
+Source Window State = "1,57,57,57,9,35,35,0,3,60,0,0,0,0,0,25,36,0,57,9,349,555,1,0,"
 
-[File 0004]
-Path = "/y/erg/ERG_TDS3032viaGPIB_Fit_Network - May2016/gpibrw.h"
+[File 0005]
+Path = "/d/QC-vision/Fit_Options.h"
+File Type = "Include"
+Disk Date = 3548156756
+In Projects = "1,"
+Window Top = 92
+Window Left = 42
+Window Z-Order = 13
+Source Window State = "1,8,9,9,0,26,26,0,0,80,0,0,0,0,0,25,0,0,24,14,349,715,1,0,"
+
+[File 0006]
+Path = "/d/QC-vision/gpibrw.h"
 File Type = "Include"
 Disk Date = 3517426800
 In Projects = "1,"
-Source Window State = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"
+Window Top = 272
+Window Left = 138
+Source Window State = "1,0,0,0,0,0,0,0,0,80,0,0,0,0,0,25,0,0,0,0,349,715,1,0,"
+
+[File 0007]
+Path = "/d/QC-vision/Sequence.uir"
+File Type = "User Interface Resource"
+Disk Date = 3548326210
+In Projects = "1,"
+Window Top = 32
+Window Left = 10
+Window Height = 349
+Window Width = 715
+Window Z-Order = 2
+
+[File 0008]
+Path = "/d/QC-vision/Sequence.h"
+File Type = "Include"
+Disk Date = 3548326210
+In Projects = "1,"
+Window Top = 92
+Window Left = 42
+Window Z-Order = 3
+Source Window State = "1,9,10,9,0,0,0,0,0,80,0,0,0,0,0,25,0,0,9,0,349,715,1,13,"
+
+[File 0009]
+Path = "/d/QC-vision/Sequence.c"
+File Type = "CSource"
+Disk Date = 3548326210
+In Projects = "1,"
+Window Top = 152
+Window Left = 74
+Window Z-Order = 1
+Source Window State = "1,92,92,92,21,22,21,0,0,205,0,0,0,0,0,48,81,0,92,22,349,715,1,0,"
+
+[File 0010]
+Path = "/d/QC-vision/Fit_Options.c"
+File Type = "CSource"
+Disk Date = 3548233523
+In Projects = "1,"
+Window Top = 182
+Window Left = 90
+Window Z-Order = 9
+Source Window State = "1,0,7,7,0,25,25,0,3,80,0,133,0,156,0,25,51,0,0,0,349,715,1,16,"
+
+[File 0011]
+Path = "/d/QC-vision/global.h"
+File Type = "Include"
+Disk Date = 3548326210
+In Projects = "1,"
+Window Top = 212
+Window Left = 106
+Window Z-Order = 4
+Source Window State = "1,44,45,44,0,0,0,0,0,80,0,83,0,83,0,25,6,0,18,23,349,715,1,0,"
+
+[File 0012]
+Path = "/d/QC-vision/Generate_Mask.c"
+File Type = "CSource"
+Disk Date = 3548312316
+In Projects = "1,"
+Window Top = 62
+Window Left = 26
+Window Z-Order = 12
+Source Window State = "1,109,110,109,0,0,0,0,0,80,0,4,0,85,0,25,83,0,116,12,349,715,1,13,"
+
+[File 0013]
+Path = "/d/QC-vision/Generate_Mask.uir"
+File Type = "User Interface Resource"
+Disk Date = 3548303635
+In Projects = "1,"
+Window Top = 92
+Window Left = 42
+Window Height = 349
+Window Width = 715
+Window Z-Order = 11
+
+[File 0014]
+Path = "/d/QC-vision/Generate_Mask.h"
+File Type = "Include"
+Disk Date = 3548303635
+In Projects = "1,"
+Window Top = 212
+Window Left = 106
+Window Z-Order = 16
+Source Window State = "1,17,17,17,9,35,35,0,3,80,0,7,0,0,0,25,8,0,17,9,349,715,1,22,"
+
+[File 0015]
+Path = "/d/Lab_software/maniip_rhodopsin/multipulse - ERG - being_modified/report.c"
+File Type = "CSource"
+Disk Date = 3546937068
+In Projects = ""
+Window Top = 92
+Window Left = 42
+Window Z-Order = 14
+Source Window State = "1,100,104,100,16,35,16,0,3,80,0,0,0,0,0,25,74,0,104,35,349,715,1,0,"
+
+[File 0016]
+Path = "/c/Users/Labuser/AppData/Local/Temp/Temp1_filebrowsing.zip/FileBrowsing.c"
+File Type = "CSource"
+Disk Date = 3548306056
+In Projects = ""
+Window Top = 92
+Window Left = 42
+Window Z-Order = 17
+Source Window State = "1,11,12,12,0,24,24,0,3,84,0,0,0,0,0,25,0,0,11,0,349,747,1,0,"
+
+[File 0017]
+Path = "/d/Lab_software/maniip_rhodopsin/multipulse - ERG - being_modified/nsga2r.c"
+File Type = "CSource"
+Disk Date = 3547185598
+In Projects = ""
+Window Top = 212
+Window Left = 106
+Window Z-Order = 15
+Source Window State = "1,883,956,883,4,22,4,0,3,84,0,0,0,0,0,25,929,0,956,22,349,747,1,0,"
+
+[File 0018]
+Path = "/c/Program Files/National Instruments/CVI2013/include/userint.h"
+File Type = "Include"
+Disk Date = 3486495600
+In Projects = ""
+Window Top = 302
+Window Left = 154
+Window Z-Order = 7
+Source Window State = "1,629,629,629,8,24,24,0,3,84,0,0,0,0,0,25,617,0,629,8,349,747,1,0,"
 
 [Tab Order]
-Tab 0001 = "/y/erg/ERG_TDS3032viaGPIB_Fit_Network - May2016/ERG.uir"
-Tab 0002 = "/y/erg/ERG_TDS3032viaGPIB_Fit_Network - May2016/gpibrw.c"
+Tab 0001 = "/d/QC-vision/Sequence.uir"
+Tab 0002 = "/d/QC-vision/Sequence.c"
+Tab 0003 = "/d/QC-vision/gpibrw.c"
+Tab 0004 = "/d/QC-vision/Fit_Options.uir"
+Tab 0005 = "/d/QC-vision/Fit_Options.c"
+Tab 0006 = "/d/QC-vision/global.h"
+Tab 0007 = "/d/QC-vision/ERG.uir"
+Tab 0008 = "/d/QC-vision/Generate_Mask.c"
+Tab 0009 = "/d/QC-vision/Generate_Mask.uir"
+Tab 0010 = "/d/Lab_software/maniip_rhodopsin/multipulse - ERG - being_modified/report.c"
+Tab 0011 = "/d/QC-vision/Fit_Options.h"
+Tab 0012 = "/d/QC-vision/Generate_Mask.h"
+Tab 0013 = "/c/Users/Labuser/AppData/Local/Temp/Temp1_filebrowsing.zip/FileBrowsing.c"
+Tab 0014 = "/d/Lab_software/maniip_rhodopsin/multipulse - ERG - being_modified/nsga2r.c"
+Tab 0015 = "/d/QC-vision/ERG.h"
+Tab 0016 = "/c/Program Files/National Instruments/CVI2013/include/userint.h"
+Tab 0017 = "/d/QC-vision/Sequence.h"
 
 [Default Build Config 0001 Debug]
 Generate Browse Info = True
