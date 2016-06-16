@@ -54,8 +54,8 @@
 #define  ERG_panel_mask_sequence          39      /* control type: command, callback function: mask_sequence */
 #define  ERG_panel_mask_folder_button     40      /* control type: command, callback function: mask_folder */
 #define  ERG_panel_folder_path            41      /* control type: string, callback function: (none) */
-#define  ERG_panel_TEXTMSG_4              42      /* control type: textMsg, callback function: (none) */
-#define  ERG_panel_loaded_mask_list       43      /* control type: ring, callback function: loaded_mask */
+#define  ERG_panel_loaded_mask_list       42      /* control type: ring, callback function: loaded_mask */
+#define  ERG_panel_TEXTMSG_4              43      /* control type: textMsg, callback function: (none) */
 
 
      /* Control Arrays: */

@@ -17,8 +17,7 @@ void fit_data (void)
 {
 	GetCtrlVal (Fit_pnl_handle, Fit_panel_start_val, &start);
 	GetCtrlVal (Fit_pnl_handle, Fit_panel_points_num, &Npoints);
-	// printf("start at: %d, Npoints : %d\n",start, Npoints);
-	double slope, intercept, residue, coef[4], value;
+	double slope, intercept, residue, coef[4];
 	double fit[Npoints];
 	int maximumIndex, minimumIndex;
 	CNVData data=0;
@@ -56,53 +55,39 @@ void fit_data (void)
 	generate_xarray ();  
 	PlotXY (Main_pnl_handle, ERG_panel_scope, &xarray[start], &buffer[start], Npoints, VAL_DOUBLE, VAL_DOUBLE, VAL_THIN_LINE, VAL_SOLID_SQUARE, VAL_SOLID, 1, VAL_GREEN); 
  	
-	GetCtrlVal (Fit_pnl_handle, Fit_panel_fit_function, &j);
-	if (j==0)  // Linear fit
+	GetCtrlVal (Fit_pnl_handle, Fit_panel_fit_function, &fit_type);
+	if (fit_type==0)  // Linear fit, returns slope
 	{
 		MaxMin1D(&buffer[start], Npoints, &maximumValue, &maximumIndex, &minimumValue, &minimumIndex);
-		Npoints=  minimumIndex;
-		LinearFitEx (&xarray[start], &buffer[start], NULL, Npoints, LEAST_SQUARE, 0.0001, fit, &slope, &intercept, &residue);
-	
-		////////////to do: create separated function for uploading network variable/////////////
-		//write optimization value (slope) as a network variable
-		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
-		CNVCreateScalarDataValue (&data, CNVDouble, slope);
-//		Delay(0.5);     
-		CNVWrite (writer, data, 5000);
-		CNVDisposeData (data);
-		Delay(0.5);
-//		printf("Slope=%f\n", slope); 
+//		Npoints=  minimumIndex;
+		LinearFitEx (&xarray[start], &buffer[start], NULL, Npoints, LEAST_SQUARE, 0.0001, fit, &value, &intercept, &residue);
+
+		
 	}
 							  
-	if (j==1)	// Gaussian fit 
+	if (fit_type==1)	// Gaussian fit, returns tau 
 	{
 		Mean (&buffer[start-100], 100, &baseline);
 		MaxMin1D(&buffer[start], Npoints, &maximumValue, &maximumIndex, &minimumValue, &minimumIndex);
-		Npoints=  minimumIndex;
+//		Npoints=  minimumIndex;
 		Mean (&buffer[start+minimumIndex-5], 10, &minimumValue);
 		coef[0]= start+minimumIndex;
 		coef[1]= minimumIndex/2;
-		// printf("base=%f, min=%f\n",baseline, minimumValue);      
 		NonLinearFitWithMaxIters (&xarray[start], &buffer[start], fit, Npoints, 100, ModelFunct, coef, 2, &residue);
-	//	printf("coef1=%f, coef2=%f\n",coef[0], coef[1]);
+		value=coef[1];
+
 		
-		//write optimization value (rise time; coef[1]) as a network variable
-//		coef[1]=coef[1]/10;
-		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
-		CNVCreateScalarDataValue (&data, CNVDouble, coef[1]/10000);
-		CNVWrite (writer, data, 5000);
-		CNVDisposeData (data);
-		Delay(0.5);
 	}
 	
-	if (j==2)	 // (max-min) amplitude fit 
+	if (fit_type==2)	 // (max-min) amplitude fit, returns amplitude 
 	{
 		MaxMin1D(&buffer[start], Npoints, &maximumValue, &maximumIndex, &minimumValue, &minimumIndex);
 		value= maximumValue - minimumValue;
-		
+		printf("%f\t%f\t%f\n", value, maximumValue, minimumValue);
+	/*	
 		if (minimumIndex < maximumIndex)
 		{
-			Npoints=maximumIndex-minimumIndex;
+//			Npoints=maximumIndex-minimumIndex;
 			Copy1D (&buffer[minimumIndex+start], Npoints, fit);
 			start= minimumIndex+start;
 			value= maximumValue - minimumValue;
@@ -111,13 +96,8 @@ void fit_data (void)
 		{
 			value= 0;
 		}
-		
-		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
-		CNVCreateScalarDataValue (&data, CNVDouble, value);
-		CNVWrite (writer, data, 5000);
-		CNVDisposeData (data);
-		Delay(0.5);
-	}
+	*/	
+}
 	
 
 	PlotXY (Main_pnl_handle, ERG_panel_scope, &xarray[start], fit, Npoints, VAL_DOUBLE, VAL_DOUBLE, VAL_THIN_LINE, VAL_SOLID_SQUARE, VAL_SOLID, 1, VAL_RED);

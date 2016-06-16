@@ -31,11 +31,10 @@ void set_levels(void)
 				
 
 			}
-			//printf("%f\n",phase[i]);
 			drive_level[i] = phase2voltage(phase[i]+2);
  
 		}
-		display_masks(drive_level);
+		display_masks();
 		
 	}
 
@@ -56,9 +55,9 @@ int phase2voltage(double phi)
 	
 	
 	voltage=p[0]+p[1]*exp(-(phi-p[2])/p[3])+p[4]*exp(-(phi-p[2])/p[5]);
-	if (voltage>4096) 
+	if (voltage>4095) 
 	{
-	voltage=4096;
+	voltage=4095;
 	}
 	if (voltage<0) 
 	{
@@ -110,7 +109,7 @@ int CVICALLBACK save_mask (int panel, int control, int event,
 			
 			for (i=0; i<Npixel; i++)
                 {
-                    fprintf(IO_mask,"%f\t",drive_level[i]);
+                    fprintf(IO_mask,"%d\t",drive_level[i]);
                 }
 				
 			fclose(IO_mask);

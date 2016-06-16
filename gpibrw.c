@@ -57,6 +57,7 @@ int main (int argc, char *argv[])
 	DisableBreakOnLibraryErrors ();
 	setup_oscillo();
 	setup_SRS();
+	start_shaper();
 	generate_xarray ();
 
 
@@ -64,9 +65,12 @@ int main (int argc, char *argv[])
 		return -1;
 	mask_folder(Main_pnl_handle,99,EVENT_COMMIT,0,0,0);
 	PopulateList();
+	strcpy (mask_filename, "flat");
+	display_masks();
 	DisplayPanel (Main_pnl_handle);
 	RunUserInterface ();
 	DiscardPanel (Main_pnl_handle);
+	stop_shaper();
 	return 0;
 }
 
@@ -79,7 +83,10 @@ void init_variables(void)
 	Npoints=10; 
 	SRS_flag=0;
 	data=0;
-	Npixel=512;
+	Npixel=640;
+	for (i=0;i<Npixel;i++){
+		drive_level[i]=0;
+	}
 }
 
 void setup_SRS(void)
@@ -102,15 +109,11 @@ void reset_connection_SRS(void)
 void setup_oscillo(void)
 {
 	static char write_buffer[100];
-	//printf("test\n");
 	// find hardware
 	reset_connection_oscillo();
 	// configure oscilloscope 
 	strcpy (write_buffer, "DATA:ENCdg RIBinary");
 	ibwrt (device, write_buffer, strlen(write_buffer));
-
-// strcpy (write_buffer, "TRIGger:MAIn:MODe NORMal");
-// ibwrt (device, write_buffer, strlen(write_buffer));
 
 	strcpy (write_buffer, "DATA:WIDTH 1");
 	ibwrt (device, write_buffer, strlen(write_buffer));
@@ -119,28 +122,6 @@ void setup_oscillo(void)
 	ibwrt (device, write_buffer, strlen(write_buffer));
 	SetCtrlVal(Main_pnl_handle, ERG_panel_LED_chanel1, 1);
 	SetCtrlVal(Main_pnl_handle, ERG_panel_LED_chanel2, 0);
-	
-// to check the oscillo settings	
-/*	strcpy (write_buffer, "DATA?");
-	ibwrt (device, write_buffer, strlen(write_buffer));
-	ibrd (device, read_buffer, numToRead);
-	printf("%s", read_buffer);
-*/
-
-// to setup the oscillo scales from the start
-	/*
-	strcpy (write_buffer, "CH2:SCALE 2E-3");
-	ibwrt (device, write_buffer, strlen(write_buffer));
-
-	strcpy (write_buffer, "CH2:POSITION -2");
-	ibwrt (device, write_buffer, strlen(write_buffer));
-
-	strcpy (write_buffer, "HORIZONTAL:SECdiv 10E-3");
-	ibwrt (device, write_buffer, strlen(write_buffer));
-
-	strcpy (write_buffer, "HORIZONTAL:POSITION 40E-3");
-	ibwrt (device, write_buffer, strlen(write_buffer));
-	*/
 	return;
 
 }
@@ -161,16 +142,127 @@ void generate_xarray (void)
 		xarray[j] = j;
 		j++;
 	}
+}
 
+void acquire_scans (void)
+{
+	int color;
+	int Nleft=0;
+	char file [ FILENAME_MAX ];
+
+	SetCtrlAttribute (Main_pnl_handle, ERG_panel_acquire, ATTR_DIMMED, 1);
+	SetCtrlAttribute (Main_pnl_handle, ERG_panel_abortscan, ATTR_DIMMED, 1);
+	if (experiment==1){
+		GetCtrlVal (Sequence_pnl_handle, Seq_panel_seq_number, &seq_num);
+		Nscans=	seq_num*m;
+	}
+	else {
+		GetCtrlVal (Main_pnl_handle, ERG_panel_nscans, &Nscans);
+	}
+
+	DirSelectPopup ("d:\\data\\test", "Select Directory", 1, 1, pathname);
+
+	i=0;
+	SetCtrlAttribute (Main_pnl_handle, ERG_panel_pause, ATTR_DIMMED, 0);
+	SetCtrlAttribute (Main_pnl_handle, ERG_panel_abortscan, ATTR_DIMMED, 0);
+	
+// start trigger 
+	SRS_flag=2;
+	SRS_onoff();
+	DeleteGraphPlot (Main_pnl_handle, ERG_panel_mask_display, -1, VAL_IMMEDIATE_DRAW);
+	
+	if (experiment==1){			 // mode sequence
+		for (i=0;i<seq_num;i++) {
+			for (h=0;h<m;h++){
+				SetCtrlIndex (Sequence_pnl_handle, Seq_panel_mask_list, h);
+				for (k=0;k<Npixel;k++){
+					drive_level[k]=mask[h].voltages[k];
+				}				
+				display_masks();
+				
+				ProcessSystemEvents();
+				GetLabelFromIndex (Sequence_pnl_handle, Seq_panel_mask_list, h, &mask_filename);
+				strcpy(filename, pathname);
+				
+				//prepare file to write
+				sprintf(file, "\\sequence%d_%s.txt", i, mask_filename);
+				strcat(filename, file);
+				data_file = OpenFile (filename, VAL_WRITE_ONLY, VAL_TRUNCATE, VAL_ASCII);
+				
+				//enable oscillo then wait for trigger and get ERG trace
+				color=floor(256/Nscans)*(i*m+h);
+				waveform(color, data_file);	
+				get_intensity();
+				
+				//write header file
+				headerfile();
+				
+				//write ERG trace 
+				ArrayToFile (filename, data2fit, VAL_DOUBLE, 10000, 1, VAL_GROUPS_TOGETHER, VAL_GROUPS_AS_ROWS, VAL_SEP_BY_TAB, 100, VAL_ASCII, VAL_APPEND);
+				nmeasure[0]=i*m+h+1;
+				displaychannel();
+				
+				Nleft=Nscans-(i*m+h);
+				SetCtrlVal (Main_pnl_handle, ERG_panel_nremain, Nleft);
+				ProcessSystemEvents();
+				if (pause_flag)
+				{
+					while (pause_flag)
+						ProcessSystemEvents();
+				}
+			}
+		}
+	}
+	
+	else{				  // mode normal
+	//prepare file name for acquiring data
+		while ( i < Nscans )
+		{
+			strcpy(filename, pathname);
+			sprintf(file, "\\scope_data%d.txt", i);
+			strcat(filename, file);
+			data_file = OpenFile (filename, VAL_WRITE_ONLY, VAL_TRUNCATE, VAL_ASCII);
+			color=floor(256/Nscans)*i;
+			waveform(color, data_file);
+			get_intensity();
+			
+			headerfile();
+			ArrayToFile (filename, data2fit, VAL_DOUBLE, 10000, 1, VAL_GROUPS_TOGETHER, VAL_GROUPS_AS_ROWS, VAL_SEP_BY_TAB, 100, VAL_ASCII, VAL_APPEND);
+			
+			i++;
+			Nleft=Nscans-i+1;
+			SetCtrlVal (Main_pnl_handle, ERG_panel_nremain, Nleft);
+			ProcessSystemEvents();
+			if (pause_flag)
+			{
+				while (pause_flag)
+					ProcessSystemEvents();
+			}
+			CloseFile (data_file);
+		}
+	}
+	
+	SetCtrlVal (Main_pnl_handle, ERG_panel_nremain, 0);
+	SetCtrlAttribute (Main_pnl_handle, ERG_panel_pause, ATTR_DIMMED, 1);
+	SetCtrlAttribute (Main_pnl_handle, ERG_panel_abortscan, ATTR_DIMMED, 1);
+	SetCtrlAttribute (Main_pnl_handle, ERG_panel_acquire, ATTR_DIMMED, 0);
+	
+// stop trigger 	
+	SRS_flag=0;
+	SRS_onoff();
+	
+	ibsic(device); 
+	return;
 }
 
 int waveform (int color, int data_file)
 {
-	static char write_buffer[100],  read_buffer[10000]  ;
+	static char write_buffer[100];
 	int numToRead=10000;
-	int written_bytes;
+	char * read_buffer;
+	read_buffer = malloc (numToRead);
 	
-	////////////////////////////////////////////////
+	
 	memset(read_buffer, 0, 10000);
 	ibsic(device);
 
@@ -184,14 +276,10 @@ int waveform (int color, int data_file)
 	strcpy (write_buffer, "ACQUIRE:STOPAFTER SEQUENCE");
 	ibwrt (device, write_buffer, strlen(write_buffer));
 	
-	//read pump intensity, mask type and scan ref
-	get_intensity();
-//	Delay(0.5);
-	
 	strcpy (write_buffer, "ACQUIRE:STATE ON");
 	ibwrt (device, write_buffer, strlen(write_buffer));
 
-	strcpy (write_buffer, "*WAI");
+	strcpy (write_buffer, "*WAI");				// wait for trigger to continue
 	ibwrt (device, write_buffer, strlen(write_buffer));
 
 	strcpy (write_buffer, "CURVe?");
@@ -200,202 +288,99 @@ int waveform (int color, int data_file)
 
 	ibrd (device, read_buffer, numToRead);
 
-//Delay(1);	 
 	ConvertArrayType (read_buffer, VAL_CHAR, data2fit, VAL_DOUBLE, 10000);
-	written_bytes=WriteFile (data_file,read_buffer ,10000 );
-	CloseFile (data_file);
+	free (read_buffer)  ;
 	
 	
 	
-	if (written_bytes!=10000)
-	{
-		printf("Error writing file!!\n");
-	}
-
+	
 	plot_data(color);                   
 	
-	GetCtrlVal (Fit_pnl_handle, Fit_panel_fit_live, &j);
-//	printf ("%d", j);
-	if (j==1)
+	// check if live-fitting is enabled
+	GetCtrlVal (Fit_pnl_handle, Fit_panel_fit_live, &fit_status);
+	if (fit_status==1)
 	{
-	fit_data ();
+		fit_data ();
 	}
 	
 	return 1;
 }
 
-int wavepreamble (void)
+int headerfile (void)
 {
 	static char write_buffer[100],  read_buffer[2500];
 	int numToRead=2500;
-	memset(read_buffer, 0, 2500);
+	
+// Sequence number
+	sprintf (msg,"Sequence= %d", i);
+	WriteLine (data_file, msg, -1);
+	
+// mask number and name
+	sprintf (msg, "Mask ID= %d\nMask name=%s", h, mask_filename);
+	WriteLine (data_file, msg, -1);
 
-	strcpy (write_buffer, "WFMPre?");
-	ibwrt (device, write_buffer, strlen(write_buffer));
-	ibrd (device, read_buffer, numToRead);
-	fprintf ( IO_output, "%s\n", read_buffer);
+// Pulse intensity	
+	sprintf (msg,"Pulse intensity= %f", channel_data[0]);
+	WriteLine (data_file, msg, -1);
 
-	return 1;
-}
+// Fit type 
+	if (fit_status==1){
+		if (fit_type==0){
+			sprintf (msg,"Fit type= linear (slope)");
+		}
+		if (fit_type==1){
+			sprintf (msg,"Fit type= Gaussian (tau)");
+		}
+		if (fit_type==2){
+			sprintf (msg,"Fit type= wave A-B (amplitude)");
+		}
+	}
+	else {
+		sprintf (msg,"Fit type= no fit");
+	}
+	WriteLine (data_file, msg, -1);
 
-int cleanbuffer (void)
-{
-	static char read_buffer[2500];
-	int numToRead=2500;
-	memset(read_buffer, 0, 2500);
-	ibrd (device, read_buffer, numToRead);
-	fprintf ( IO_output, "%s\n", read_buffer);
-
-	return 1;
-}
-
-int wavexinterval (void)
-{
-	static char write_buffer[100],  read_buffer[2500];
-	int numToRead=2500;
+//Optimization value	
+	sprintf (msg,"Optimization value=%f", value);	
+	WriteLine (data_file, msg, -1);
+	
+//  wave x interval
 	memset(read_buffer, 0, 2500);
 	strcpy (write_buffer, "WFMPre:XINcr?");
 	ibwrt (device, write_buffer, strlen(write_buffer));
-	ibrd (device, read_buffer, numToRead);				
-	fprintf ( IO_output, "%s\n", read_buffer);
+	ibrd (device, read_buffer, numToRead);
+	sprintf (msg, "X interval= %s", read_buffer);
+	WriteLine (data_file, msg, -1);
 
-	return 1;
-}
-
-int waveyscaling (void)
-{
-	static char write_buffer[100],  read_buffer[2500];
-	int numToRead=2500;
+//  Y scaling factor
 	memset(read_buffer, 0, 2500);
 	strcpy (write_buffer, "WFMPre:YMUlt?");
 	ibwrt (device, write_buffer, strlen(write_buffer));
 	ibrd (device, read_buffer, numToRead);
-	fprintf ( IO_output, "%s\n", read_buffer);
-
-	return 1;
-}
-
-int wavex0 (void)
-{
-	static char write_buffer[100],  read_buffer[2500];
-	int numToRead=2500;
+	sprintf (msg, "Y scaling factor= %s", read_buffer);
+	WriteLine (data_file, msg, -1);
+	
+// First x data point
 	memset(read_buffer, 0, 2500);
 	strcpy (write_buffer, "WFMPre:XZEro?");
 	ibwrt (device, write_buffer, strlen(write_buffer));
 	ibrd (device, read_buffer, numToRead);
-	fprintf ( IO_output, "%s\n", read_buffer);
-
+	sprintf (msg, "X0= %s", read_buffer);
+	WriteLine (data_file, msg, -1);
+	
 	return 1;
 }
 
-void acquire_scans (void)
+void get_intensity(void)
 {
-	int color;
-	int Nleft=0;
-	char file [ FILENAME_MAX ];
-	char filename[FILENAME_MAX];
-	int data_file;
-
-	SetCtrlAttribute (Main_pnl_handle, ERG_panel_acquire, ATTR_DIMMED, 1);
-	SetCtrlAttribute (Main_pnl_handle, ERG_panel_abortscan, ATTR_DIMMED, 1);
-	GetCtrlVal (Main_pnl_handle, ERG_panel_nscans, &Nscans);
-
-	DirSelectPopup ("d:\\data\\test", "Select Directory", 1, 1, pathname);
-
-//acquire preambule
-	strcpy(filename, pathname);
-	sprintf(file, "\\scope_info.txt");
-	strcat(filename, file);
-	IO_output = fopen (filename, "w");
-	wavepreamble();
-	fclose(IO_output);
-
-//acquire scaling coefficients
-	strcpy(filename, pathname);
-	sprintf(file, "\\scope_xinterval.txt");
-	strcat(filename, file);
-	IO_output = fopen (filename, "w");
-	wavexinterval();
-	fclose(IO_output);
-
-	strcpy(filename, pathname);
-	sprintf(file, "\\scope_yscaling.txt");
-	strcat(filename, file);
-	IO_output = fopen (filename, "w");
-	waveyscaling();
-	fclose(IO_output);
-
-	strcpy(filename, pathname);
-	sprintf(file, "\\scope_x0.txt");
-	strcat(filename, file);
-	IO_output = fopen (filename, "w");
-	wavex0();
-	fclose(IO_output);
-
-	i=0;
-	SetCtrlAttribute (Main_pnl_handle, ERG_panel_pause, ATTR_DIMMED, 0);
-	SetCtrlAttribute (Main_pnl_handle, ERG_panel_abortscan, ATTR_DIMMED, 0);
+	init_DAQ();
+	readDAQ();
 	
-// start trigger 
-	SRS_flag=2;
-	SRS_onoff();
+}
 
-// prepare file for intensity values, mask type and scan ref
-	strcpy(filename, pathname);
-	sprintf(file, "\\intensity.txt");
-	strcat(filename, file);
-	IO_intensity = fopen (filename, "w"); 
-	
-	 
-	
-//prepare file name for acquiring data
-	while ( i < Nscans )
-	{
-		strcpy(filename, pathname);
-		sprintf(file, "\\scope_data%d.txt", i);
-		strcat(filename, file);
-
-		data_file=OpenFile (filename, VAL_WRITE_ONLY, VAL_OPEN_AS_IS, VAL_BINARY);
-
-		color=floor(256/Nscans)*i;
-		waveform(color, data_file);
-		
-//the increment is done within the waveform function
-		i++;
-
-		Nleft=Nscans-i+1;
-		SetCtrlVal (Main_pnl_handle, ERG_panel_nremain, Nleft);
-		ProcessSystemEvents();
-		if (pause_flag)
-		{
-			while (pause_flag)
-				ProcessSystemEvents();
-		}
-	}
-	SetCtrlVal (Main_pnl_handle, ERG_panel_nremain, 0);
-	SetCtrlAttribute (Main_pnl_handle, ERG_panel_pause, ATTR_DIMMED, 1);
-	SetCtrlAttribute (Main_pnl_handle, ERG_panel_abortscan, ATTR_DIMMED, 1);
-	SetCtrlAttribute (Main_pnl_handle, ERG_panel_acquire, ATTR_DIMMED, 0);
-	
-// stop trigger 	
-	SRS_flag=0;
-	SRS_onoff();
-
-//clean buffer
-	strcpy(filename, pathname);
-	sprintf(file, "\\junk.txt");
-	strcat(filename, file);
-	IO_output = fopen (filename, "w");
-	cleanbuffer();
-	fclose(IO_output);
-
-//close file 
-	if (Nscans==0)
-	{
-	fclose(IO_intensity);
-	}
-	
-	return;
+void displaychannel(void)
+{
+	PlotXY (Main_pnl_handle, ERG_panel_signal_display, nmeasure, channel_data, 1, VAL_INTEGER, VAL_DOUBLE, VAL_DOT, VAL_SOLID_SQUARE, VAL_SOLID, 1, VAL_RED);
 }
 
 void SRS_onoff(void)
@@ -405,7 +390,6 @@ void SRS_onoff(void)
 
 	if (SRS_flag==0)	 //SRS output set on 0.1V --> not triggering
 	{
-//			printf("SRS status: %d\n",SRS_flag);
 		SRS_flag=1;
 		strcpy (write_buffer, "OM 4,3");
 		ibwrt (device1, write_buffer, strlen(write_buffer));
@@ -419,7 +403,6 @@ void SRS_onoff(void)
 	else if (SRS_flag==1)   //SRS output set on TTL --> triggering!
 	{
 
-//			printf("SRS status: %d\n",SRS_flag);
 		SRS_flag=0;
 		strcpy (write_buffer, "OM 4,0");
 		ibwrt (device1, write_buffer, strlen(write_buffer));
@@ -433,7 +416,6 @@ void SRS_onoff(void)
 	else  if (SRS_flag==2)   //Scanning mode SRS output set on TTL --> triggering!
 	{
 
-//			printf("SRS status: %d\n",SRS_flag);
 		SRS_flag=1;
 		strcpy (write_buffer, "OM 4,0");
 		ibwrt (device1, write_buffer, strlen(write_buffer));
@@ -444,20 +426,6 @@ void SRS_onoff(void)
 		SetCtrlVal(Main_pnl_handle, ERG_panel_LED_SRS, 1);
 	}
 	return;
-}
-
-
-
-void get_intensity(void)
-{
-	static CNVReader	reader;
-	
-	CNVCreateReader ("\\\\dell780lab-4\\ERG\\Pulse_intensity", NULL, NULL, 10000, 0, &reader);
-	CNVRead (reader, 10000, &data);
-	CNVGetArrayDataValue (data, CNVDouble, &tobelog, 3); 
-    printf("%f\t%f\t%f\t%d\n",tobelog[0],tobelog[1],tobelog[2],i-1);
-	fprintf ( IO_intensity, "%f\t%f\t%f\t%d\n", tobelog[0],tobelog[1],tobelog[2],i-1);  //i-1 bc the values are taken before the trigg for oscillo acquisition
-	
 }
 
 double ModelFunct (double x, double a[], int ncoef)
@@ -504,11 +472,12 @@ void plot_data (int color)
 	PlotY (Main_pnl_handle, ERG_panel_scope, buffer, 10000,VAL_DOUBLE , VAL_THIN_LINE, VAL_EMPTY_SQUARE, VAL_SOLID, 1, MakeColor(color,color,color));
 }
 
-double display_masks(double drive_level[])
+int display_masks(void)
 {   
-	
+		
 	DeleteGraphPlot (Main_pnl_handle, ERG_panel_mask_display, -1, VAL_IMMEDIATE_DRAW);
-	PlotY (Main_pnl_handle, ERG_panel_mask_display, drive_level, Npixel, VAL_DOUBLE, VAL_VERTICAL_BAR, VAL_NO_POINT, VAL_SOLID, 1, VAL_RED);
+	send_masks(drive_level);
+	PlotY (Main_pnl_handle, ERG_panel_mask_display, drive_level, Npixel, VAL_INTEGER, VAL_VERTICAL_BAR, VAL_NO_POINT, VAL_SOLID, 1, VAL_RED);
 															 
 					
 	return 0;
@@ -518,9 +487,11 @@ void PopulateList()
 {
 	char label[MAX_PATHNAME_LEN];
 	char fileName[MAX_PATHNAME_LEN];
-	int numItems = 0; 
+	int numItems = 1; 
 	
 	ClearListCtrl (Main_pnl_handle, ERG_panel_loaded_mask_list);
+	InsertListItem (Main_pnl_handle, ERG_panel_loaded_mask_list, -1, "flat", 0);
+	
 	SplitPath (mask_path, NULL, NULL, fileName);
 	Fmt (label, "%s<%s%s%s", "Project Directory (", fileName, ")");
 	GetFiles(mask_path, &numItems, numItems-1);
@@ -529,7 +500,6 @@ void PopulateList()
 void GetFiles(char dir[], int* numItems, int parentItem)
 {
 	char fileName[MAX_PATHNAME_LEN], searchPath[MAX_PATHNAME_LEN];
-	int error = 0;
 	strcpy (searchPath, dir); 
 	strcat (searchPath, "\\*");
 	
@@ -564,6 +534,7 @@ int CVICALLBACK abortscan (int panel, int control, int event,
 		case EVENT_COMMIT:
 			//set value of Nscans to zerro to properly quite the acqquire-scans-loop while writing the leftover buffer from oscillo.
 			Nscans=0;
+			seq_num=0;
 			SetCtrlAttribute (Main_pnl_handle, ERG_panel_abortscan, ATTR_DIMMED, 0);
 			break;
 	}
@@ -682,7 +653,6 @@ int CVICALLBACK pulsespertrigg (int panel, int control, int event,
 			//which corresponds to the number of pulses at 1kHz.
 			GetCtrlVal(Main_pnl_handle, ERG_panel_npulses, &Npulses);
 			sprintf(write_buffer,"DT 3,2,%d.03E-3", Npulses);
-//			printf("Npulses:%s", write_buffer);    
 			ibwrt (device1, write_buffer, strlen(write_buffer));
 			break;
 	}
@@ -701,14 +671,13 @@ int CVICALLBACK secbwtrigg (int panel, int control, int event,
 			//get and set the waiting time bewteen to trigger pulses sent to the sutter, in sec.
 			GetCtrlVal(Main_pnl_handle, ERG_panel_nsec, &Nsec);
 			sprintf(write_buffer,"DT 5,1,%d", Nsec);
-//			printf("nsec:%s", write_buffer);    
 			ibwrt (device1, write_buffer, strlen(write_buffer));
 			break;
 	}
 	return 0;
 }
 
-int CVICALLBACK resetoscillo (int panel, int control, int event,
+int CVICALLBACK resetoscillo (int pfanel, int control, int event,
 							  void *callbackData, int eventData1, int eventData2)
 {
 	switch (event)
@@ -724,7 +693,6 @@ int CVICALLBACK load_plot (int panel, int control, int event,
 						   void *callbackData, int eventData1, int eventData2)
 {
 	int color;
-	static char read_buffer[10000]  ;
 	switch (event)
 	{
 		case EVENT_COMMIT:
@@ -732,9 +700,7 @@ int CVICALLBACK load_plot (int panel, int control, int event,
 			FileSelectPopupEx ("d:\\data\\test", "*.*", "txt", "Load data", VAL_LOAD_BUTTON, 0, 0, pathname);
 			
 			memset(data2fit, 0, sizeof(data2fit));
-			FileToArray (pathname, read_buffer, VAL_CHAR, 10000, 1, VAL_GROUPS_TOGETHER, VAL_GROUPS_AS_COLUMNS, VAL_BINARY);
-			ConvertArrayType (read_buffer, VAL_CHAR, data2fit, VAL_DOUBLE, 10000); 
-//			printf("%s, value:%f\n",pathname, data2fit[100]);
+			FileToArray (pathname, data2fit, VAL_DOUBLE, 10000, 1, VAL_GROUPS_TOGETHER, VAL_GROUPS_AS_ROWS, VAL_ASCII);
 			plot_data (color); 
 			break;
 	}
@@ -764,20 +730,27 @@ int CVICALLBACK mask_folder (int panel, int control, int event,
 int  CVICALLBACK loaded_mask(int panel, int control, int event, void *callbackData, int eventData1, int eventData2)
 {	
 	char dummy[500];
-	double dummyInt[1000];
 	switch (event)
 			
 	{
 	case EVENT_COMMIT:
 		GetCtrlVal (Main_pnl_handle, ERG_panel_loaded_mask_list, &mask_index);
 		GetLabelFromIndex (Main_pnl_handle, ERG_panel_loaded_mask_list, mask_index, &mask_filename);
+		if (mask_index==0){
+			for (i=0;i<Npixel;i++){
+					drive_level[i]=0;
+				}
 		
-		strcpy (dummy, mask_path);
-		strcat (dummy, "\\");
-		strcat(dummy, mask_filename);
+		}
+		else{
+			strcpy (dummy, mask_path);
+			strcat (dummy, "\\");
+			strcat(dummy, mask_filename);
 		
-		FileToArray (dummy, drive_level, VAL_DOUBLE, Npixel, 1, VAL_GROUPS_TOGETHER, VAL_GROUPS_AS_COLUMNS, VAL_ASCII);
-		display_masks(drive_level);
+			FileToArray (dummy, drive_level, VAL_INTEGER, Npixel, 1, VAL_GROUPS_TOGETHER, VAL_GROUPS_AS_COLUMNS, VAL_ASCII);
+		}
+		
+		display_masks();
 
 
 
@@ -786,4 +759,3 @@ int  CVICALLBACK loaded_mask(int panel, int control, int event, void *callbackDa
 	}
 	return 0;
 }
-

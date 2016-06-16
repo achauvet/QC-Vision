@@ -20,7 +20,6 @@
 #define  Seq_panel_Deletefromlist         5       /* control type: command, callback function: Deletefromlist */
 #define  Seq_panel_start_sequence         6       /* control type: command, callback function: start_sequence */
 #define  Seq_panel_seq_number             7       /* control type: numeric, callback function: (none) */
-#define  Seq_panel_abort_seq              8       /* control type: command, callback function: abort_seq */
 
 
      /* Control Arrays: */
@@ -35,7 +34,6 @@
 
      /* Callback Prototypes: */
 
-int  CVICALLBACK abort_seq(int panel, int control, int event, void *callbackData, int eventData1, int eventData2);
 int  CVICALLBACK add_mask(int panel, int control, int event, void *callbackData, int eventData1, int eventData2);
 int  CVICALLBACK Clear_list(int panel, int control, int event, void *callbackData, int eventData1, int eventData2);
 int  CVICALLBACK Deletefromlist(int panel, int control, int event, void *callbackData, int eventData1, int eventData2);

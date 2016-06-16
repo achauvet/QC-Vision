@@ -467,7 +467,6 @@ void fit_data (void)
 {
 	GetCtrlVal (Fit_pnl_handle, Fit_panel_start_val, &start);
 	GetCtrlVal (Fit_pnl_handle, Fit_panel_points_num, &Npoints);
-	//printf("start at: %d, Npoints : %d\n",start, Npoints);
 	double slope, intercept, residue, coef[4], value;
 	double fit[Npoints];
 	int maximumIndex, minimumIndex;
@@ -517,11 +516,9 @@ void fit_data (void)
 		//write optimization value (slope) as a network variable
 		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
 		CNVCreateScalarDataValue (&data, CNVDouble, slope);
-//		Delay(0.5);     
 		CNVWrite (writer, data, 5000);
 		CNVDisposeData (data);
 		Delay(0.5);
-//		printf("Slope=%f\n", slope); 
 	}
 							  
 	if (j==1)
@@ -532,12 +529,9 @@ void fit_data (void)
 		Mean (&buffer[start+minimumIndex-5], 10, &minimumValue);
 		coef[0]= start+minimumIndex;
 		coef[1]= minimumIndex/2;
-	//	printf("base=%f, min=%f\n",baseline, minimumValue);      
 		NonLinearFitWithMaxIters (&xarray[start], &buffer[start], fit, Npoints, 100, ModelFunct, coef, 2, &residue);
-	//	printf("coef1=%f, coef2=%f\n",coef[0], coef[1]);
 		
 		//write optimization value (rise time; coef[1]) as a network variable
-//		coef[1]=coef[1]/10;
 		CNVCreateWriter ("\\\\localhost\\ERG\\optimisation_value", 0, 0, 10000, 0, &writer);
 		CNVCreateScalarDataValue (&data, CNVDouble, coef[1]/10000);
 		CNVWrite (writer, data, 5000);
@@ -574,14 +568,14 @@ void fit_data (void)
 
 void get_intensity(void)
 {
-	static CNVReader	reader;
+/*	static CNVReader	reader;
 	
 	CNVCreateReader ("\\\\dell780lab-4\\ERG\\Pulse_intensity", NULL, NULL, 10000, 0, &reader);
 	CNVRead (reader, 10000, &data);
 	CNVGetArrayDataValue (data, CNVDouble, &tobelog, 3); 
     printf("%f\t%f\t%f\t%d\n",tobelog[0],tobelog[1],tobelog[2],i-1);
 	fprintf ( IO_intensity, "%f\t%f\t%f\t%d\n", tobelog[0],tobelog[1],tobelog[2],i-1);  //i-1 bc the values are taken before the trigg for oscillo acquisition
-	
+*/	
 }
 
 double ModelFunct (double x, double a[], int ncoef)
@@ -785,7 +779,6 @@ int CVICALLBACK secbwtrigg (int panel, int control, int event,
 			//get and set the waiting time bewteen to trigger pulses sent to the sutter, in sec.
 			GetCtrlVal(Main_pnl_handle, ERG_panel_nsec, &Nsec);
 			sprintf(write_buffer,"DT 5,1,%d", Nsec);
-//			printf("nsec:%s", write_buffer);    
 			ibwrt (device1, write_buffer, strlen(write_buffer));
 			break;
 	}

@@ -9,7 +9,7 @@ IVI Standard Root Dir = "/C/Program Files/IVI Foundation/IVI"
 VXIplug&play Framework Dir = "/C/Program Files/IVI Foundation/VISA/winnt"
 IVI Standard Root 64-bit Dir = "/C/Program Files/IVI Foundation/IVI"
 VXIplug&play Framework 64-bit Dir = "/C/Program Files/IVI Foundation/VISA/win64"
-Number of Files = 14
+Number of Files = 21
 Target Type = "Executable"
 Flags = 16
 Copied From Locked InstrDrv Directory = False
@@ -19,21 +19,24 @@ Don't Display Deploy InstrDrv Dialog = False
 
 [Folders]
 Instrument Files Folder Not Added Yet = True
-Library Files Folder Not Added Yet = True
 Folder 0 = "Source Files"
 FolderEx 0 = "Source Files"
 Folder 1 = "Include Files"
 FolderEx 1 = "Include Files"
 Folder 2 = "User Interface Files"
 FolderEx 2 = "User Interface Files"
+Folder 3 = "DAQ Tasks"
+FolderEx 3 = "DAQ Tasks"
+Folder 4 = "Library Files"
+FolderEx 4 = "Library Files"
 
 [File 0001]
 File Type = "CSource"
 Res Id = 1
 Path Is Rel = True
 Path Rel To = "Project"
-Path Rel Path = "Fit_Options.c"
-Path = "/d/QC-vision/Fit_Options.c"
+Path Rel Path = "DAQ.c"
+Path = "/d/QC-vision/DAQ.c"
 Exclude = False
 Compile Into Object File = False
 Project Flags = 0
@@ -45,8 +48,8 @@ File Type = "CSource"
 Res Id = 2
 Path Is Rel = True
 Path Rel To = "Project"
-Path Rel Path = "Generate_Mask.c"
-Path = "/d/QC-vision/Generate_Mask.c"
+Path Rel Path = "Fit_Options.c"
+Path = "/d/QC-vision/Fit_Options.c"
 Exclude = False
 Compile Into Object File = False
 Project Flags = 0
@@ -58,8 +61,8 @@ File Type = "CSource"
 Res Id = 3
 Path Is Rel = True
 Path Rel To = "Project"
-Path Rel Path = "gpibrw.c"
-Path = "/d/QC-vision/gpibrw.c"
+Path Rel Path = "Generate_Mask.c"
+Path = "/d/QC-vision/Generate_Mask.c"
 Exclude = False
 Compile Into Object File = False
 Project Flags = 0
@@ -71,6 +74,19 @@ File Type = "CSource"
 Res Id = 4
 Path Is Rel = True
 Path Rel To = "Project"
+Path Rel Path = "gpibrw.c"
+Path = "/d/QC-vision/gpibrw.c"
+Exclude = False
+Compile Into Object File = False
+Project Flags = 0
+Folder = "Source Files"
+Folder Id = 0
+
+[File 0005]
+File Type = "CSource"
+Res Id = 5
+Path Is Rel = True
+Path Rel To = "Project"
 Path Rel Path = "Sequence.c"
 Path = "/d/QC-vision/Sequence.c"
 Exclude = False
@@ -79,37 +95,26 @@ Project Flags = 0
 Folder = "Source Files"
 Folder Id = 0
 
-[File 0005]
-File Type = "Include"
-Res Id = 5
-Path Is Rel = True
-Path Rel To = "Project"
-Path Rel Path = "ERG.h"
-Path = "/d/QC-vision/ERG.h"
-Exclude = False
-Project Flags = 0
-Folder = "Include Files"
-Folder Id = 1
-
 [File 0006]
-File Type = "Include"
+File Type = "CSource"
 Res Id = 6
 Path Is Rel = True
 Path Rel To = "Project"
-Path Rel Path = "Fit_Options.h"
-Path = "/d/QC-vision/Fit_Options.h"
+Path Rel Path = "shaper/shaper.c"
+Path = "/d/QC-vision/shaper/shaper.c"
 Exclude = False
+Compile Into Object File = False
 Project Flags = 0
-Folder = "Include Files"
-Folder Id = 1
+Folder = "Source Files"
+Folder Id = 0
 
 [File 0007]
 File Type = "Include"
 Res Id = 7
 Path Is Rel = True
 Path Rel To = "Project"
-Path Rel Path = "Generate_Mask.h"
-Path = "/d/QC-vision/Generate_Mask.h"
+Path Rel Path = "ERG.h"
+Path = "/d/QC-vision/ERG.h"
 Exclude = False
 Project Flags = 0
 Folder = "Include Files"
@@ -120,8 +125,8 @@ File Type = "Include"
 Res Id = 8
 Path Is Rel = True
 Path Rel To = "Project"
-Path Rel Path = "global.h"
-Path = "/d/QC-vision/global.h"
+Path Rel Path = "shaper/fctypes_modified.h"
+Path = "/d/QC-vision/shaper/fctypes_modified.h"
 Exclude = False
 Project Flags = 0
 Folder = "Include Files"
@@ -132,8 +137,8 @@ File Type = "Include"
 Res Id = 9
 Path Is Rel = True
 Path Rel To = "Project"
-Path Rel Path = "gpibrw.h"
-Path = "/d/QC-vision/gpibrw.h"
+Path Rel Path = "Fit_Options.h"
+Path = "/d/QC-vision/Fit_Options.h"
 Exclude = False
 Project Flags = 0
 Folder = "Include Files"
@@ -144,6 +149,42 @@ File Type = "Include"
 Res Id = 10
 Path Is Rel = True
 Path Rel To = "Project"
+Path Rel Path = "Generate_Mask.h"
+Path = "/d/QC-vision/Generate_Mask.h"
+Exclude = False
+Project Flags = 0
+Folder = "Include Files"
+Folder Id = 1
+
+[File 0011]
+File Type = "Include"
+Res Id = 11
+Path Is Rel = True
+Path Rel To = "Project"
+Path Rel Path = "global.h"
+Path = "/d/QC-vision/global.h"
+Exclude = False
+Project Flags = 0
+Folder = "Include Files"
+Folder Id = 1
+
+[File 0012]
+File Type = "Include"
+Res Id = 12
+Path Is Rel = True
+Path Rel To = "Project"
+Path Rel Path = "gpibrw.h"
+Path = "/d/QC-vision/gpibrw.h"
+Exclude = False
+Project Flags = 0
+Folder = "Include Files"
+Folder Id = 1
+
+[File 0013]
+File Type = "Include"
+Res Id = 13
+Path Is Rel = True
+Path Rel To = "Project"
 Path Rel Path = "Sequence.h"
 Path = "/d/QC-vision/Sequence.h"
 Exclude = False
@@ -151,9 +192,33 @@ Project Flags = 0
 Folder = "Include Files"
 Folder Id = 1
 
-[File 0011]
+[File 0014]
+File Type = "Include"
+Res Id = 14
+Path Is Rel = True
+Path Rel To = "Project"
+Path Rel Path = "shaper/shaper.h"
+Path = "/d/QC-vision/shaper/shaper.h"
+Exclude = False
+Project Flags = 0
+Folder = "Include Files"
+Folder Id = 1
+
+[File 0015]
+File Type = "Include"
+Res Id = 15
+Path Is Rel = True
+Path Rel To = "Project"
+Path Rel Path = "shaper/slms640d_modified.h"
+Path = "/d/QC-vision/shaper/slms640d_modified.h"
+Exclude = False
+Project Flags = 0
+Folder = "Include Files"
+Folder Id = 1
+
+[File 0016]
 File Type = "User Interface Resource"
-Res Id = 11
+Res Id = 16
 Path Is Rel = True
 Path Rel To = "Project"
 Path Rel Path = "ERG.uir"
@@ -163,9 +228,9 @@ Project Flags = 0
 Folder = "User Interface Files"
 Folder Id = 2
 
-[File 0012]
+[File 0017]
 File Type = "User Interface Resource"
-Res Id = 12
+Res Id = 17
 Path Is Rel = True
 Path Rel To = "Project"
 Path Rel Path = "Fit_Options.uir"
@@ -175,9 +240,9 @@ Project Flags = 0
 Folder = "User Interface Files"
 Folder Id = 2
 
-[File 0013]
+[File 0018]
 File Type = "User Interface Resource"
-Res Id = 13
+Res Id = 18
 Path Is Rel = True
 Path Rel To = "Project"
 Path Rel Path = "Generate_Mask.uir"
@@ -187,9 +252,9 @@ Project Flags = 0
 Folder = "User Interface Files"
 Folder Id = 2
 
-[File 0014]
+[File 0019]
 File Type = "User Interface Resource"
-Res Id = 14
+Res Id = 19
 Path Is Rel = True
 Path Rel To = "Project"
 Path Rel Path = "Sequence.uir"
@@ -198,6 +263,30 @@ Exclude = False
 Project Flags = 0
 Folder = "User Interface Files"
 Folder Id = 2
+
+[File 0020]
+File Type = "DLL"
+Res Id = 20
+Path Is Rel = True
+Path Rel To = "Project"
+Path Rel Path = "shaper/slms640d.dll"
+Path = "/d/QC-vision/shaper/slms640d.dll"
+Exclude = False
+Project Flags = 0
+Folder = "Library Files"
+Folder Id = 4
+
+[File 0021]
+File Type = "Library"
+Res Id = 21
+Path Is Rel = True
+Path Rel To = "Project"
+Path Rel Path = "shaper/slms640d.lib"
+Path = "/d/QC-vision/shaper/slms640d.lib"
+Exclude = False
+Project Flags = 0
+Folder = "Library Files"
+Folder Id = 4
 
 [Custom Build Configs]
 Num Custom Build Configs = 0
